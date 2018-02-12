@@ -35,7 +35,7 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = vxi111.0.0
-DISTDIR = /home/jsars/Descargas/vxi11-lib/vxi11/build64/.tmp/vxi111.0.0
+DISTDIR = /home/jsars/PasantiaCendit/Desarrollo/Software/vxi11-lib/vxi11/build64/.tmp/vxi111.0.0
 LINK          = g++
 LFLAGS        = -shared -Wl,-soname,libvxi11.so.1
 LIBS          = $(SUBLIBS) -lpthread 
@@ -52,12 +52,12 @@ OBJECTS_DIR   = ./
 
 SOURCES       = ../vxi11_clnt.cpp \
 		../vxi11_lib.cpp \
-		../vxi11_svc.cpp \
-		../vxi11_user.cpp 
+		../vxi11_user.cpp \
+		../vxi11_xdr.cpp 
 OBJECTS       = vxi11_clnt.o \
 		vxi11_lib.o \
-		vxi11_svc.o \
-		vxi11_user.o
+		vxi11_user.o \
+		vxi11_xdr.o
 DIST          = /opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/features/spec_pre.prf \
 		/opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/common/unix.conf \
 		/opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/common/linux.conf \
@@ -210,11 +210,11 @@ DIST          = /opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/features/spec_pre.prf \
 		/opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/features/exceptions.prf \
 		/opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/features/yacc.prf \
 		/opt/Qt5.9.1/5.9.1/gcc_64/mkspecs/features/lex.prf \
-		../../vxi11.pro vxi11_lib.h \
-		vxi11.h ../vxi11_clnt.cpp \
+		../../vxi11.pro vxi11.h \
+		vxi11_lib.h ../vxi11_clnt.cpp \
 		../vxi11_lib.cpp \
-		../vxi11_svc.cpp \
-		../vxi11_user.cpp
+		../vxi11_user.cpp \
+		../vxi11_xdr.cpp
 QMAKE_TARGET  = vxi11
 DESTDIR       = 
 TARGET        = libvxi11.so.1.0.0
@@ -600,12 +600,12 @@ vxi11_lib.o: ../vxi11_lib.cpp ../vxi11_lib.h \
 		../vxi11.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o vxi11_lib.o ../vxi11_lib.cpp
 
-vxi11_svc.o: ../vxi11_svc.cpp ../vxi11.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o vxi11_svc.o ../vxi11_svc.cpp
-
 vxi11_user.o: ../vxi11_user.cpp ../vxi11_user.h \
 		../vxi11.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o vxi11_user.o ../vxi11_user.cpp
+
+vxi11_xdr.o: ../vxi11_xdr.cpp ../vxi11.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o vxi11_xdr.o ../vxi11_xdr.cpp
 
 ####### Install
 

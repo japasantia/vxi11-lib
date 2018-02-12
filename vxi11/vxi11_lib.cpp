@@ -7,8 +7,18 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <algorithm>
 
 #include <thread>
+
+ int Vxi11_LibraryId(char* pBuffer, int len)
+{
+    const char* pMessage = "Vxi11 Library adapted by Jose Arias\ncorreo@JoseArias.com.ve\0";
+    size_t size = std::max(0, std::min(len, (int) strlen(pMessage)));
+    memcpy(pBuffer, pMessage, size);
+
+    return 0;
+}
 
 /* OPEN FUNCTIONS */
 
@@ -22,7 +32,7 @@ int Vxi11_OpenDevice(VxiHandle* pHandle, const char* pIp, char* pDevice)
         return -1;
     }
 
-    return Vxi11_OpenLink(pIp, pDevice, pHandle);
+    return Vxi11_OpenLink(pHandle, pIp, pDevice);
 }
 
 int Vxi11_OpenDevice(VxiHandle* pHandle, const char* pIp)
@@ -57,7 +67,7 @@ int Vxi11_OpenLink(VxiHandle* pHandle, const char* pIp, char* pDevice)
 
 int Vxi11_CloseDevice(VxiHandle* pHandle, const char* pIp)
 {
-    int ret = Vxi11_CloseLink(pIp, pHandle);
+    int ret = Vxi11_CloseLink(pHandle, pIp);
 
     clnt_destroy(pHandle->pClient);
 
@@ -264,6 +274,8 @@ int Vxi11_ReadSTB(VxiHandle* pHandle, unsigned char* pStb, unsigned long timeout
     return 0;
 }
 
+/* UTIL FUNCTIONS */
+
 int Vxi11_DeviceTrigger(VxiHandle* pHandle, unsigned long timeout)
 {
     Device_GenericParms genericParms;
@@ -443,59 +455,21 @@ int Vxi11_RegisterSRQHandler(int (*callback)(char* arg))
 {
     Vxi11_SRQHandler = callback;
 
+    try
+    {        
+        std::thread srqThread(Vxi11_InitializeSRQService);
+        srqThread.detach();
+
+        Vxi11_SRQHandler("RPC service started");
+    }
+    catch (std::exception& ex)
+    {
+        printf("%s", ex.what());
+    }
+
+    // Vxi11_InitializeSRQService();
+
     return 0;
-}
-
-
-char* device_intr_srq_1_svc(char* MyDevice_SrqParms, struct svc_req* Mysvc_req)
-{
-    printf("SRQ received...\n");
-
-    (*Vxi11_SRQHandler)(MyDevice_SrqParms);
-
-    return(NULL);
-}
-
-static void device_intr_1(struct svc_req *rqstp, register SVCXPRT *transp)
-{
-union {
-    Device_SrqParms device_intr_srq_1_arg;
-    } argument;
-    char *result;
-
-xdrproc_t _xdr_argument, _xdr_result;
-    char *(*local)(char *, struct svc_req *);
-switch (rqstp->rq_proc)
-{
-    case NULLPROC:
-        (void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
-        return;
-    case device_intr_srq:
-        _xdr_argument = (xdrproc_t) xdr_Device_SrqParms;
-        _xdr_result = (xdrproc_t) xdr_void;
-        local = (char *(*)(char *, struct svc_req *)) device_intr_srq_1_svc;
-        break;
-    default:
-        svcerr_noproc (transp);
-        return;
-}
-    memset ((char *)&argument, 0, sizeof (argument));
-    if (!svc_getargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument))
-    {
-        svcerr_decode (transp);
-        return;
-    }
-    result = (*local)((char *)&argument, rqstp);
-    if (result != NULL && !svc_sendreply(transp, (xdrproc_t) _xdr_result, result))
-    {
-        svcerr_systemerr (transp);
-    }
-    if (!svc_freeargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument))
-    {
-        fprintf (stderr, "%s", "unable to free arguments");
-        exit (1);
-    }
-    return;
 }
 
 // int main (int argc, char **argv)
@@ -533,10 +507,59 @@ int Vxi11_InitializeSRQService()
     // NOTREACHED
 }
 
-int Vxi11_StartServiceSRQ()
+char* device_intr_srq_1_svc(char* MyDevice_SrqParms, struct svc_req* Mysvc_req)
 {
-    std::thread srqThread(&Vxi11_InitializeSRQService);
+    printf("SRQ received...\n");
+
+    int ret = (*Vxi11_SRQHandler)(MyDevice_SrqParms);
+
+    printf("SRQ handler function returned: %d", ret);
+
+    return(NULL);
 }
 
+static void device_intr_1(struct svc_req *rqstp, register SVCXPRT *transp)
+{
+    union
+    {
+        Device_SrqParms device_intr_srq_1_arg;
+    } argument;
+    char *result;
+
+    xdrproc_t _xdr_argument, _xdr_result;
+    char *(*local)(char *, struct svc_req *);
+
+    switch (rqstp->rq_proc)
+    {
+        case NULLPROC:
+            (void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
+            return;
+        case device_intr_srq:
+            _xdr_argument = (xdrproc_t) xdr_Device_SrqParms;
+            _xdr_result = (xdrproc_t) xdr_void;
+            local = (char *(*)(char *, struct svc_req *)) device_intr_srq_1_svc;
+            break;
+        default:
+            svcerr_noproc (transp);
+            return;
+    }
+    memset ((char *)&argument, 0, sizeof (argument));
+    if (!svc_getargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument))
+    {
+        svcerr_decode (transp);
+        return;
+    }
+    result = (*local)((char *)&argument, rqstp);
+    if (result != NULL && !svc_sendreply(transp, (xdrproc_t) _xdr_result, result))
+    {
+        svcerr_systemerr (transp);
+    }
+    if (!svc_freeargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument))
+    {
+        fprintf (stderr, "%s", "unable to free arguments");
+        exit (1);
+    }
+    return;
+}
 
 

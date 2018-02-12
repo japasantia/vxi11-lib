@@ -31,19 +31,16 @@ typedef struct tagVxiHandle
 } VxiHandle;
 
 EXPORT_C
- int Vxi11_LibraryId(char* pBuffer, int len);
-
-EXPORT_C
 int Vxi11_OpenDevice(VxiHandle* pHandle, const char* pIp, char* pDevice);
 
 int Vxi11_OpenDevice(VxiHandle* pHandle, const char* pIp);
 
-int Vxi11_OpenLink( VxiHandle* pHandle, const char* pIp, char* pDevice);
+int Vxi11_OpenLink(const char* pIp, char* pDevice, VxiHandle* pHandle);
 
 EXPORT_C
-int Vxi11_CloseDevice(VxiHandle* pHandle, const char* pIp);
+int Vxi11_CloseDevice(const char* pIp, VxiHandle* pHandle);
 
-int Vxi11_CloseLink(VxiHandle* pHandle, const char* pIp);
+int Vxi11_CloseLink(const char* pIp, VxiHandle* pHandle);
 
 EXPORT_C
 int Vxi11_Send(VxiHandle* pHandle, const char* pData, unsigned long len);
@@ -81,8 +78,6 @@ EXPORT_C
 int Vxi11_RegisterSRQHandler(int (*callback)(char* arg));
 
 int Vxi11_InitializeSRQService();
-
-static void device_intr_1(struct svc_req *rqstp, register SVCXPRT *transp);
 
 // #ifdef __cplusplus
 // }

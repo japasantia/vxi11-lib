@@ -25,12 +25,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     vxi11_clnt.cpp \
     vxi11_lib.cpp \
-    vxi11_svc.cpp \
-    vxi11_user.cpp
+    vxi11_user.cpp \
+    vxi11_xdr.cpp
 
 HEADERS += \
-    vxi11_lib.h \
-    vxi11.h
+    vxi11.h \
+    vxi11_lib.h
 
 unix {
     target.path = /usr/lib
